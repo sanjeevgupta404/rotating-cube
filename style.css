@@ -1,0 +1,17 @@
+/* Reset default browser spacing */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Dark page background — also shown before Three.js loads */
+body {
+  background-color: #0f0f0f;
+  overflow: hidden; /* no scrollbars */
+}
+
+/* Let the renderer control canvas size via JS — don't override with CSS */
+#cube-canvas {
+  display: block;
+}

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Rotating Cube</title>
+    <link rel="stylesheet" href="style.css" />
+
+    <!--
+      Import map: tells the browser where to find "three" and
+      "three/addons/" when we use ES module imports in main.js.
+      This avoids any CDN path / namespace issues.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+
+    <!-- Three.js will render into this canvas -->
+    <canvas id="cube-canvas"></canvas>
+
+    <!-- type="module" lets us use ES import statements -->
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
