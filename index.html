@@ -1,31 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Rotating Cube</title>
-    <link rel="stylesheet" href="style.css" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Rotating Cube</title>
 
-    <!--
-      Import map: tells the browser where to find "three" and
-      "three/addons/" when we use ES module imports in main.js.
-      This avoids any CDN path / namespace issues.
-    -->
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-        }
-      }
-    </script>
-  </head>
-  <body>
+  <style>
+    /* Remove default browser spacing */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    <!-- Three.js will render into this canvas -->
-    <canvas id="cube-canvas"></canvas>
+    /* Dark background shown while the page loads */
+    body {
+      background-color: #0f0f0f;
+      overflow: hidden;
+    }
 
-    <!-- type="module" lets us use ES import statements -->
-    <script type="module" src="main.js"></script>
-  </body>
+    /* Canvas fills the full window — renderer controls its pixel size */
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!--
+    Three.js loaded from a CDN using a plain <script> tag.
+    This puts everything under the global THREE object — no imports needed.
+    The integrity hash locks the version so it can't be tampered with.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+
+  <!--
+    OrbitControls for this older Three.js version lives at examples/js/
+    and correctly attaches itself to THREE.OrbitControls.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    // ─────────────────────────────────────────────
+    //  1. SCENE
+    //  The scene holds all 3D objects and lights.
+    // ─────────────────────────────────────────────
+    var scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f0f0f);  // dark background
+
+
+    // ─────────────────────────────────────────────
+    //  2. CAMERA
+    //  PerspectiveCamera(fov, aspect, near, far)
+    //  We position it back on the Z axis so the
+    //  cube sits right in the center of the view.
+    // ─────────────────────────────────────────────
+    var camera = new THREE.PerspectiveCamera(
+      60,                                       // field of view in degrees
+      window.innerWidth / window.innerHeight,   // aspect ratio
+      0.1,                                      // near clip
+      1000                                      // far clip
+    );
+    camera.position.set(0, 0, 3);  // step back 3 units along Z
+    camera.lookAt(0, 0, 0);        // always point at the cube
+
+
+    // ─────────────────────────────────────────────
+    //  3. RENDERER
+    //  Draws the scene onto a new <canvas> element
+    //  that it creates and appends to the page.
+    // ─────────────────────────────────────────────
+    var renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);  // add canvas to page
+
+
+    // ─────────────────────────────────────────────
+    //  4. LIGHTS
+    //  MeshPhongMaterial needs light to show color.
+    //  Three lights ensure every face is visible.
+    // ─────────────────────────────────────────────
+
+    // Soft base light — prevents any face being pure black
+    var ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    // Main bright light from the upper-right front
+    var mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    mainLight.position.set(4, 4, 4);
+    scene.add(mainLight);
+
+    // Softer fill light from the opposite side
+    var fillLight = new THREE.DirectionalLight(0xaaaaff, 0.5);
+    fillLight.position.set(-4, -2, -4);
+    scene.add(fillLight);
+
+
+    // ─────────────────────────────────────────────
+    //  5. CUBE
+    //  Geometry = shape. Material = surface look.
+    //  Mesh = geometry + material, placed in scene.
+    //  Each of the 6 faces gets its own bright color.
+    // ─────────────────────────────────────────────
+    var geometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+
+    var materials = [
+      new THREE.MeshPhongMaterial({ color: 0xff6b6b }),  // right  — coral red
+      new THREE.MeshPhongMaterial({ color: 0xffa94d }),  // left   — orange
+      new THREE.MeshPhongMaterial({ color: 0xffd43b }),  // top    — yellow
+      new THREE.MeshPhongMaterial({ color: 0x69db7c }),  // bottom — green
+      new THREE.MeshPhongMaterial({ color: 0x74c0fc }),  // front  — sky blue
+      new THREE.MeshPhongMaterial({ color: 0xda77f2 }),  // back   — purple
+    ];
+
+    var cube = new THREE.Mesh(geometry, materials);
+    scene.add(cube);
+
+
+    // ─────────────────────────────────────────────
+    //  6. ORBIT CONTROLS
+    //  Lets users drag to rotate and scroll to zoom.
+    //  THREE.OrbitControls is available because we
+    //  loaded the OrbitControls script above.
+    // ─────────────────────────────────────────────
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;    // smooth "ease out" when releasing drag
+    controls.dampingFactor = 0.05;
+    controls.enableZoom = true;       // scroll to zoom in/out
+    controls.enablePan = false;       // keep cube centered — no panning
+    controls.minDistance = 1.5;       // closest zoom
+    controls.maxDistance = 8;         // farthest zoom
+
+
+    // ─────────────────────────────────────────────
+    //  7. RESIZE HANDLER
+    //  Keeps everything sharp when the window size
+    //  changes (e.g. rotating a phone).
+    // ─────────────────────────────────────────────
+    window.addEventListener('resize', function () {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+
+    // ─────────────────────────────────────────────
+    //  8. ANIMATION LOOP
+    //  Called ~60 times per second by the browser.
+    //  Each frame: rotate cube a little → update
+    //  controls → draw the scene.
+    // ─────────────────────────────────────────────
+    function animate() {
+      requestAnimationFrame(animate);   // schedule next frame
+
+      cube.rotation.x += 0.004;        // tilt slowly upward
+      cube.rotation.y += 0.006;        // spin slowly sideways
+
+      controls.update();                // required when damping is on
+      renderer.render(scene, camera);   // draw everything
+    }
+
+    animate();  // start the loop
+  </script>
+
+</body>
 </html>
